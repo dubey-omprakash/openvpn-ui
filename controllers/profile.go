@@ -196,6 +196,15 @@ func (c *ProfileController) Create() {
 			logs.Info("New user with login \"" + user.Login + "\" created successfully.")
 			flash.Success("New user with login \"" + user.Login + "\" created successfully.")
 			flash.Store(&c.Controller)
+
+			if err := lib.SendAlertEmail(lib.AlertUserCreated, lib.AlertData{
+				RecipientEmail: newUser.Email,
+				RecipientName:  newUser.Name,
+				Login:          newUser.Login,
+				ActorLogin:     c.Userinfo.Login,
+			}); err != nil {
+				logs.Warn("Profile: failed to send welcome email to " + newUser.Email + ": " + err.Error())
+			}
 		} else {
 			logs.Debug(newUser)
 		}

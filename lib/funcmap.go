@@ -3,7 +3,9 @@ package lib
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"strconv"
+	"strings"
 
 	"github.com/beego/beego/v2/core/logs"
 	"github.com/beego/beego/v2/server/web"
@@ -11,6 +13,30 @@ import (
 
 // AddFuncMaps .
 func AddFuncMaps() {
+	// safeid turns a certificate name into a string that is safe to use in an
+	// HTML id and in a CSS/jQuery selector. Names such as "first.last" or
+	// "user@example.com" contain characters that break "#id" selectors, which
+	// stopped the certificate details popup from opening.
+	_ = web.AddFuncMap("safeid", func(in string) string {
+		var b strings.Builder
+		changed := false
+		for _, r := range in {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+				b.WriteRune(r)
+			} else {
+				b.WriteByte('-')
+				changed = true
+			}
+		}
+		out := b.String()
+		if changed {
+			// keep "a.b" and "a-b" from colliding
+			h := fnv.New32a()
+			_, _ = h.Write([]byte(in))
+			out = fmt.Sprintf("%s-%08x", out, h.Sum32())
+		}
+		return out
+	})
 	_ = web.AddFuncMap("field_error_message", func(v map[string]map[string]string, key string) map[string]string {
 		if val, ok := v[key]; ok {
 			return val

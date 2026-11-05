@@ -41,21 +41,21 @@
               {{ if ne .Details.Name "server"}}
               <tr>
                   <td>
-                    <a href="{{urlfor "CertificatesController.Download" ":key" .Details.Name}}">
-                      {{ .Details.Name }}
+                    <a href="{{urlfor "CertificatesController.Download" ":key" (or .Details.Name .Details.CN)}}">
+                      {{ or .Details.Name .Details.CN }}
                     </a>
                   </td>
                   {{if and (eq .Revocation "") (not .IsExpiring)}}
                     <td>
-                      <i class="fa fa-fw fa-check-circle" style="color: #00a65a; font-size: 17px;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"></i>
+                      <i class="fa fa-fw fa-check-circle" style="color: #00a65a; font-size: 17px;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"></i>
                     </td>
                   {{else if and (eq .Revocation "") .IsExpiring}}
                     <td>
-                      <i class="fa fa-fw fa-exclamation-circle" style="color: #f39c12; font-size: 17px;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"></i>
+                      <i class="fa fa-fw fa-exclamation-circle" style="color: #f39c12; font-size: 17px;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"></i>
                     </td>
                   {{else}}
                     <td>
-                      <i class="fa fa-fw fa-times-circle" style="color: #dd4b39; font-size: 17px;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"></i>
+                      <i class="fa fa-fw fa-times-circle" style="color: #dd4b39; font-size: 17px;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"></i>
                     </td>
                   {{end}}
                     <td>
@@ -64,15 +64,15 @@
 
                   {{if and (eq .Revocation "") (not .IsExpiring)}}
                     <td>
-                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
+                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
                     </td>
                   {{else if and (eq .Revocation "") .IsExpiring}}
                     <td>
-                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
+                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
                     </td>
                   {{else}}
                     <td>
-                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
+                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
                     </td>
                   {{end}}
 
@@ -80,7 +80,7 @@
                     <td></td>
                   {{else}}
                     <td>
-                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .RevocationT "2006-01-02 15:04"}}</b></a>
+                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .RevocationT "2006-01-02 15:04"}}</b></a>
                     </td>
                   {{end}}
                     <!--td>
@@ -88,40 +88,40 @@
                     </td-->
                   {{if and (eq .Revocation "") (not .IsExpiring)}}
                     <td>
-                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
-                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
+                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
+                      <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
                     </td>
                   {{else if and (eq .Revocation "") .IsExpiring}}
                     <td>
-                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
-                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
+                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
+                      <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
                     </td>
                   {{else}}
                     <td>
-                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
-                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#{{ .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
+                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
+                      <a class="btn btn-danger btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
                     </td>
                   {{end}}
                     <td class="align-middle">
                   {{ if and (eq .Revocation "") (ne .Details.Name "") }}
-                      <a href="{{urlfor "CertificatesController.Renew" ":key" .Details.Name ":localip" .Details.LocalIP ":serial" .Serial ":tfaname" .Details.TFAName}}" class="btn btn-primary btn-xs" title="Renew" style="font-size: 80%;">Renew</a>
+                      <a href="{{urlfor "CertificatesController.Renew" ":key" (or .Details.Name .Details.CN) ":localip" (or .Details.LocalIP "dynamic.pool") ":serial" .Serial ":tfaname" (or .Details.TFAName "none")}}" class="btn btn-primary btn-xs" title="Renew" style="font-size: 80%;">Renew</a>
                   {{else}}
                       <a class="btn btn-default btn-xs" disabled>Renew</a>
                   {{end}}
 
                   {{ if and (eq .Revocation "") (ne .Details.Name "") }}
-                      <a href="{{urlfor "CertificatesController.Revoke" ":key" .Details.Name ":serial" .Serial ":tfaname" .Details.TFAName}}" class="btn btn-warning btn-xs" title="Revoke" style="font-size: 80%;">Revoke</a>
+                      <a href="{{urlfor "CertificatesController.Revoke" ":key" (or .Details.Name .Details.CN) ":serial" .Serial ":tfaname" (or .Details.TFAName "none")}}" class="btn btn-warning btn-xs" title="Revoke" style="font-size: 80%;">Revoke</a>
                   {{else}}
                       <a class="btn btn-default btn-xs" disabled>Revoke</a>
                   {{end}}
                   {{ if eq .Revocation ""}}
                       <a class="btn btn-default btn-xs" disabled>Delete</a>
                   {{else}}
-                      <a href="{{urlfor "CertificatesController.Burn" ":key" .Details.CN ":serial" .Serial ":tfaname" .Details.TFAName}}" class="btn btn-danger btn-xs" title="Burn" style="font-size: 80%;">Delete</a>
+                      <a href="{{urlfor "CertificatesController.Burn" ":key" .Details.CN ":serial" .Serial ":tfaname" (or .Details.TFAName "none")}}" class="btn btn-danger btn-xs" title="Burn" style="font-size: 80%;">Delete</a>
                   {{end}}
                     </td>
               </tr>
-              <div id="{{ .Details.CN }}-modal" class="modal fade">
+              <div id="cert-{{ safeid .Details.CN }}-modal" class="modal fade">
                 <div class="modal-dialog">
                   <div class="modal-content">
                     <div class="modal-header">

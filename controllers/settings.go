@@ -44,6 +44,26 @@ func (c *SettingsController) Post() {
 		flash.Store(&c.Controller)
 		return
 	}
+
+	// Checkbox fields are omitted entirely from the POST body when unchecked,
+	// so ParseForm cannot distinguish "left unchecked" from "field absent" --
+	// set them explicitly from the raw form values instead.
+	settings.SMTPEnabled = c.GetString("SMTPEnabled") == "on"
+	settings.SMTPUseTLS = c.GetString("SMTPUseTLS") == "on"
+	settings.SMTPSkipVerify = c.GetString("SMTPSkipVerify") == "on"
+	settings.SMTPNotifyOnCertCreate = c.GetString("SMTPNotifyOnCertCreate") == "on"
+	settings.SMTPNotifyOnCertRevoke = c.GetString("SMTPNotifyOnCertRevoke") == "on"
+	settings.SMTPNotifyOnUserCreate = c.GetString("SMTPNotifyOnUserCreate") == "on"
+
+	// If the password field was left blank (e.g. the operator only changed
+	// the host), keep the previously stored password instead of wiping it.
+	if c.GetString("SMTPPassword") == "" {
+		existing := models.Settings{Profile: "default"}
+		if err := existing.Read("Profile"); err == nil {
+			settings.SMTPPassword = existing.SMTPPassword
+		}
+	}
+
 	c.Data["Settings"] = &settings
 
 	o := orm.NewOrm()
