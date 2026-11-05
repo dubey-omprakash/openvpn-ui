@@ -183,6 +183,62 @@
 </div>
 <!-- /.card -->
 
+<div class="card card-default">
+  <div class="card-header with-border">
+    <h3 class="card-title">Email message text (optional)</h3>
+    <div class="pull-right card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse">
+        <i class="fa fa-minus"></i></button>
+    </div>
+  </div>
+  <div class="card-body">
+    <p class="text-muted">
+      Leave a field empty to use the built-in message. Placeholders you can use in subjects and bodies:
+      <code>{{"{{.SiteName}}"}}</code> <code>{{"{{.ClientName}}"}}</code> <code>{{"{{.Serial}}"}}</code>
+      <code>{{"{{.StaticIP}}"}}</code> <code>{{"{{.ExpireDays}}"}}</code> <code>{{"{{.ActorLogin}}"}}</code>
+      <code>{{"{{.RecipientName}}"}}</code> <code>{{"{{.RecipientEmail}}"}}</code> <code>{{"{{.Login}}"}}</code>
+    </p>
+
+    <div class="form-group">
+      <label class="col-form-label" for="EmailSiteName">Product / site name</label>
+      <input type="text" class="form-control" id="EmailSiteName" name="EmailSiteName" title="Shown in subjects and sign-offs." placeholder="OpenVPN UI" value="{{ .Settings.EmailSiteName }}">
+    </div>
+
+    <hr>
+    <p><strong>New certificate</strong> (sent with the .ovpn profile and 2FA QR code)</p>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailCertSubject">Subject</label>
+      <input type="text" class="form-control" id="EmailCertSubject" name="EmailCertSubject" value="{{ .Settings.EmailCertSubject }}">
+    </div>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailCertBody">Body</label>
+      <textarea class="form-control" rows="8" id="EmailCertBody" name="EmailCertBody">{{ .Settings.EmailCertBody }}</textarea>
+    </div>
+
+    <hr>
+    <p><strong>Certificate revoked</strong></p>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailRevokeSubject">Subject</label>
+      <input type="text" class="form-control" id="EmailRevokeSubject" name="EmailRevokeSubject" value="{{ .Settings.EmailRevokeSubject }}">
+    </div>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailRevokeBody">Body</label>
+      <textarea class="form-control" rows="6" id="EmailRevokeBody" name="EmailRevokeBody">{{ .Settings.EmailRevokeBody }}</textarea>
+    </div>
+
+    <hr>
+    <p><strong>New OpenVPN-UI user</strong></p>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailUserSubject">Subject</label>
+      <input type="text" class="form-control" id="EmailUserSubject" name="EmailUserSubject" value="{{ .Settings.EmailUserSubject }}">
+    </div>
+    <div class="form-group">
+      <label class="col-form-label" for="EmailUserBody">Body</label>
+      <textarea class="form-control" rows="6" id="EmailUserBody" name="EmailUserBody">{{ .Settings.EmailUserBody }}</textarea>
+    </div>
+  </div>
+</div>
+
 <div class="card-body">
   {{ .xsrfdata }}
   <button type="submit" class="btn btn-primary" style="width: 125px;">Save Config</button>

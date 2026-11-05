@@ -200,6 +200,7 @@ func (c *ProfileController) Create() {
 			if err := lib.SendAlertEmail(lib.AlertUserCreated, lib.AlertData{
 				RecipientEmail: newUser.Email,
 				RecipientName:  newUser.Name,
+				Login:          newUser.Login,
 				ActorLogin:     c.Userinfo.Login,
 			}); err != nil {
 				logs.Warn("Profile: failed to send welcome email to " + newUser.Email + ": " + err.Error())

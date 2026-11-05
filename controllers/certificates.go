@@ -200,7 +200,7 @@ func (c *CertificatesController) lookupCertEmail(name string) string {
 		return ""
 	}
 	for _, v := range certs {
-		if v.Details != nil && v.Details.Name == name {
+		if v.Details != nil && (v.Details.Name == name || v.Details.CN == name) {
 			return v.Details.Email
 		}
 	}

@@ -36,6 +36,17 @@ type Settings struct {
 	SMTPNotifyOnCertRevoke bool `orm:"default(true)" form:"SMTPNotifyOnCertRevoke"`
 	SMTPNotifyOnUserCreate bool `orm:"default(true)" form:"SMTPNotifyOnUserCreate"`
 
+	// Optional custom email text. Empty means "use the built-in message".
+	// Subjects and bodies are Go text/template strings, see lib/email.go for the
+	// available placeholders (.SiteName, .ClientName, .Serial, ...).
+	EmailSiteName      string `orm:"size(128);null" form:"EmailSiteName"`
+	EmailCertSubject   string `orm:"size(255);null" form:"EmailCertSubject"`
+	EmailCertBody      string `orm:"type(text);null" form:"EmailCertBody"`
+	EmailRevokeSubject string `orm:"size(255);null" form:"EmailRevokeSubject"`
+	EmailRevokeBody    string `orm:"type(text);null" form:"EmailRevokeBody"`
+	EmailUserSubject   string `orm:"size(255);null" form:"EmailUserSubject"`
+	EmailUserBody      string `orm:"type(text);null" form:"EmailUserBody"`
+
 	Created time.Time `orm:"auto_now_add;type(datetime)"`
 	Updated time.Time `orm:"auto_now;type(datetime)"`
 }

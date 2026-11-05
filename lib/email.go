@@ -5,11 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"html"
 	"mime"
 	"net/smtp"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
@@ -274,6 +276,7 @@ type AlertData struct {
 	StaticIP       string
 	ExpireDays     string
 	ActorLogin     string // admin/user who performed the action
+	Login          string // login name of a newly created UI user
 	SiteName       string
 	OVPNProfile    []byte // raw .ovpn file content, attached when present
 	OVPNFilename   string
@@ -318,10 +321,13 @@ func SendAlertEmail(kind AlertKind, data AlertData) error {
 
 	siteName := data.SiteName
 	if siteName == "" {
+		siteName = strings.TrimSpace(settings.EmailSiteName)
+	}
+	if siteName == "" {
 		siteName = "OpenVPN UI"
 	}
 
-	subject, bodyText, bodyHTML := renderAlertTemplate(kind, data, siteName)
+	subject, bodyText, bodyHTML := renderAlertTemplate(settings, kind, data, siteName)
 
 	msg := EmailMessage{
 		To:       []string{data.RecipientEmail},
@@ -362,25 +368,36 @@ func sanitizeFilename(name string) string {
 	return replacer.Replace(name)
 }
 
-func renderAlertTemplate(kind AlertKind, data AlertData, siteName string) (subject, bodyText, bodyHTML string) {
+func renderAlertTemplate(settings *models.Settings, kind AlertKind, data AlertData, siteName string) (subject, bodyText, bodyHTML string) {
+	// Values placed into the default HTML bodies must be escaped.
+	eh := data
+	eh.ClientName = html.EscapeString(data.ClientName)
+	eh.Serial = html.EscapeString(data.Serial)
+	eh.StaticIP = html.EscapeString(data.StaticIP)
+	eh.ExpireDays = html.EscapeString(data.ExpireDays)
+	eh.ActorLogin = html.EscapeString(data.ActorLogin)
+	eh.RecipientName = html.EscapeString(data.RecipientName)
+	eh.Login = html.EscapeString(data.Login)
+	esite := html.EscapeString(siteName)
+
 	switch kind {
 	case AlertCertificateCreated:
 		subject = fmt.Sprintf("[%s] New VPN certificate issued: %s", siteName, data.ClientName)
 		bodyText = fmt.Sprintf(
-			"Hello,\n\nA new Quantum Safe VPN certificate has been issued for \"%s\".\n\n"+
+			"Hello,\n\nA new VPN certificate has been issued for \"%s\".\n\n"+
 				"Static IP: %s\nCertificate validity: %s day(s)\nIssued by: %s\n\n"+
 				"Your .ovpn client profile is attached. If two-factor authentication\n"+
 				"is enabled, the QR code for your authenticator app is attached as well.\n\n"+
 				"Keep these files confidential -- they grant access to the VPN.\n\n-- %s\n",
 			data.ClientName, orDash(data.StaticIP), orDash(data.ExpireDays), orDash(data.ActorLogin), siteName)
 		bodyHTML = fmt.Sprintf(
-			"<p>Hello,</p><p>A new Quantum Safe VPN certificate has been issued for <b>%s</b>.</p>"+
+			"<p>Hello,</p><p>A new VPN certificate has been issued for <b>%s</b>.</p>"+
 				"<ul><li>Static IP: %s</li><li>Certificate validity: %s day(s)</li><li>Issued by: %s</li></ul>"+
 				"<p>Your <b>.ovpn</b> client profile is attached. If two-factor authentication is enabled, "+
 				"the QR code for your authenticator app is attached as well.</p>"+
 				"<p style=\"color:#b00\">Keep these files confidential — they grant access to the VPN.</p>"+
 				"<p>-- %s</p>",
-			data.ClientName, orDash(data.StaticIP), orDash(data.ExpireDays), orDash(data.ActorLogin), siteName)
+			eh.ClientName, orDash(eh.StaticIP), orDash(eh.ExpireDays), orDash(eh.ActorLogin), esite)
 
 	case AlertCertificateRevoked:
 		subject = fmt.Sprintf("[%s] VPN certificate revoked: %s", siteName, data.ClientName)
@@ -391,25 +408,25 @@ func renderAlertTemplate(kind AlertKind, data AlertData, siteName string) (subje
 		bodyHTML = fmt.Sprintf(
 			"<p>Hello,</p><p>The VPN certificate for <b>%s</b> (serial %s) has been revoked by %s.</p>"+
 				"<p>This client will no longer be able to connect once the server reloads its CRL.</p><p>-- %s</p>",
-			data.ClientName, orDash(data.Serial), orDash(data.ActorLogin), siteName)
+			eh.ClientName, orDash(eh.Serial), orDash(eh.ActorLogin), esite)
 
 	case AlertUserCreated:
 		subject = fmt.Sprintf("[%s] Your OpenVPN UI account was created", siteName)
 		bodyText = fmt.Sprintf(
 			"Hello %s,\n\nAn OpenVPN UI administration account has been created for you on %s.\n"+
 				"Login: %s\n\nPlease sign in and change your password on first use.\n\n-- %s\n",
-			orDash(data.RecipientName), siteName, orDash(data.ActorLogin), siteName)
+			orDash(data.RecipientName), siteName, orDash(data.Login), siteName)
 		bodyHTML = fmt.Sprintf(
 			"<p>Hello %s,</p><p>An OpenVPN UI administration account has been created for you on <b>%s</b>.</p>"+
 				"<p>Login: <b>%s</b></p><p>Please sign in and change your password on first use.</p><p>-- %s</p>",
-			orDash(data.RecipientName), siteName, orDash(data.ActorLogin), siteName)
+			orDash(eh.RecipientName), esite, orDash(eh.Login), esite)
 
 	default:
 		subject = fmt.Sprintf("[%s] Notification", siteName)
 		bodyText = "This is an automated notification."
 		bodyHTML = "<p>This is an automated notification.</p>"
 	}
-	return subject, bodyText, bodyHTML
+	return applyCustomTemplates(settings, kind, data, siteName, subject, bodyText, bodyHTML)
 }
 
 func orDash(s string) string {
@@ -446,4 +463,87 @@ func ReadOVPNProfile(ovConfigPath, name string) []byte {
 // given OpenVPN config path and client name.
 func ReadQRCode(ovConfigPath, name string) []byte {
 	return readFileIfExists(filepath.Join(ovConfigPath, "clients", name+".png"))
+}
+
+// templateVars are the placeholders an administrator can use in custom email
+// subjects and bodies, for example: "Certificate {{.ClientName}} was issued".
+type templateVars struct {
+	SiteName       string
+	ClientName     string
+	Serial         string
+	StaticIP       string
+	ExpireDays     string
+	ActorLogin     string
+	RecipientName  string
+	RecipientEmail string
+	Login          string
+}
+
+func renderCustomText(name, tpl string, v templateVars) (string, error) {
+	t, err := template.New(name).Parse(tpl)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, v); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+// textToHTML converts a plain-text body to a simple, escaped HTML body.
+func textToHTML(s string) string {
+	escaped := html.EscapeString(strings.ReplaceAll(s, "\r\n", "\n"))
+	return "<div style=\"font-family:sans-serif\">" + strings.ReplaceAll(escaped, "\n", "<br>\n") + "</div>"
+}
+
+// applyCustomTemplates replaces the built-in subject/body with the
+// administrator's own text from Settings, when one is configured. A template
+// that fails to parse or run is logged and the built-in text is used instead,
+// so a typo in a template never stops an alert from being sent.
+func applyCustomTemplates(settings *models.Settings, kind AlertKind, data AlertData, siteName, subject, bodyText, bodyHTML string) (string, string, string) {
+	var subjTpl, bodyTpl string
+	switch kind {
+	case AlertCertificateCreated:
+		subjTpl, bodyTpl = settings.EmailCertSubject, settings.EmailCertBody
+	case AlertCertificateRevoked:
+		subjTpl, bodyTpl = settings.EmailRevokeSubject, settings.EmailRevokeBody
+	case AlertUserCreated:
+		subjTpl, bodyTpl = settings.EmailUserSubject, settings.EmailUserBody
+	}
+
+	vars := templateVars{
+		SiteName:       siteName,
+		ClientName:     data.ClientName,
+		Serial:         data.Serial,
+		StaticIP:       orDash(data.StaticIP),
+		ExpireDays:     orDash(data.ExpireDays),
+		ActorLogin:     data.ActorLogin,
+		RecipientName:  data.RecipientName,
+		RecipientEmail: data.RecipientEmail,
+		Login:          data.Login,
+	}
+
+	if strings.TrimSpace(subjTpl) != "" {
+		if out, err := renderCustomText("subject", subjTpl, vars); err != nil {
+			logs.Warn("Email: custom subject for %s is invalid, using the default: %v", kind, err)
+		} else {
+			// A subject must be a single line.
+			out = strings.NewReplacer("\r", " ", "\n", " ").Replace(out)
+			if strings.TrimSpace(out) != "" {
+				subject = strings.TrimSpace(out)
+			}
+		}
+	}
+
+	if strings.TrimSpace(bodyTpl) != "" {
+		if out, err := renderCustomText("body", bodyTpl, vars); err != nil {
+			logs.Warn("Email: custom body for %s is invalid, using the default: %v", kind, err)
+		} else if strings.TrimSpace(out) != "" {
+			bodyText = out
+			bodyHTML = textToHTML(out)
+		}
+	}
+
+	return subject, bodyText, bodyHTML
 }
