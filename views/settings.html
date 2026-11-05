@@ -66,13 +66,126 @@
         </div>
       </div>
 
-      {{ .xsrfdata }}
-
-      <button type="submit" class="btn btn-primary" style="width: 125px;">Save Config</button>  
     </div>
         <!-- /.card-body -->
-  </form>
 </div>  
 </div>
 <!-- /.card -->
+
+<div class="card card-default">
+  <div class="card-header with-border">
+    <h3 class="card-title">Email (SMTP) Alerts</h3>
+    <div class="pull-right card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse">
+        <i class="fa fa-minus"></i></button>
+    </div>
+  </div>
+  <!-- /.card-header -->
+  <div class="card-body">
+    <div class="card-body">
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPEnabled" name="SMTPEnabled" {{if .Settings.SMTPEnabled}}checked{{end}}>
+        <label class="form-check-label" for="SMTPEnabled">Enable SMTP email alerts</label>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPHost">SMTP Host</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-server"></i></span>
+          </div>
+          <input type="text" class="form-control" id="SMTPHost" name="SMTPHost" title="SMTP server hostname or IP." placeholder="smtp.example.com" value="{{ .Settings.SMTPHost }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPPort">SMTP Port</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-plug"></i></span>
+          </div>
+          <input type="number" class="form-control" id="SMTPPort" name="SMTPPort" title="SMTP server port (587=STARTTLS, 465=SMTPS, 25=plain)." placeholder="587" value="{{ .Settings.SMTPPort }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPUsername">SMTP Username</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-user"></i></span>
+          </div>
+          <input type="text" class="form-control" id="SMTPUsername" name="SMTPUsername" title="SMTP authentication username." placeholder="alerts@example.com" value="{{ .Settings.SMTPUsername }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPPassword">SMTP Password</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-key"></i></span>
+          </div>
+          <input type="password" class="form-control" id="SMTPPassword" name="SMTPPassword" title="SMTP authentication password or app password." placeholder="••••••••" value="{{ .Settings.SMTPPassword }}" autocomplete="new-password">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPFromEmail">From Email</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+          </div>
+          <input type="text" class="form-control" id="SMTPFromEmail" name="SMTPFromEmail" title="Envelope/From address used for outbound alerts." placeholder="vpn-alerts@example.gov" value="{{ .Settings.SMTPFromEmail }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="col-form-label" for="SMTPFromName">From Name</label>
+        <div class="input-group mb-3">
+          <div class="input-group-prepend">
+            <span class="input-group-text"><i class="fas fa-signature"></i></span>
+          </div>
+          <input type="text" class="form-control" id="SMTPFromName" name="SMTPFromName" title="Display name used for outbound alerts." placeholder="Quantum Safe VPN" value="{{ .Settings.SMTPFromName }}">
+        </div>
+      </div>
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPUseTLS" name="SMTPUseTLS" {{if .Settings.SMTPUseTLS}}checked{{end}}>
+        <label class="form-check-label" for="SMTPUseTLS">Use TLS / STARTTLS (recommended)</label>
+      </div>
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPSkipVerify" name="SMTPSkipVerify" {{if .Settings.SMTPSkipVerify}}checked{{end}}>
+        <label class="form-check-label" for="SMTPSkipVerify">Skip TLS certificate verification (self-signed relay only)</label>
+      </div>
+
+      <hr>
+      <p><strong>Notify on:</strong></p>
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPNotifyOnCertCreate" name="SMTPNotifyOnCertCreate" {{if .Settings.SMTPNotifyOnCertCreate}}checked{{end}}>
+        <label class="form-check-label" for="SMTPNotifyOnCertCreate">New certificate created (sends .ovpn profile + 2FA QR code)</label>
+      </div>
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPNotifyOnCertRevoke" name="SMTPNotifyOnCertRevoke" {{if .Settings.SMTPNotifyOnCertRevoke}}checked{{end}}>
+        <label class="form-check-label" for="SMTPNotifyOnCertRevoke">Certificate revoked</label>
+      </div>
+
+      <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SMTPNotifyOnUserCreate" name="SMTPNotifyOnUserCreate" {{if .Settings.SMTPNotifyOnUserCreate}}checked{{end}}>
+        <label class="form-check-label" for="SMTPNotifyOnUserCreate">New OpenVPN-UI user account created</label>
+      </div>
+
+    </div>
+        <!-- /.card-body -->
+</div>
+</div>
+<!-- /.card -->
+
+<div class="card-body">
+  {{ .xsrfdata }}
+  <button type="submit" class="btn btn-primary" style="width: 125px;">Save Config</button>
+</div>
+</form>
 {{end}}

@@ -147,6 +147,7 @@ func (c *CertificatesController) Post() {
 			} else {
 				flash.Success("Success! Certificate for the name \"" + cParams.Name + "\" has been created")
 				flash.Store(&c.Controller)
+				c.sendCertificateEmail(cParams)
 			}
 		}
 	}
@@ -164,6 +165,11 @@ func (c *CertificatesController) Revoke() {
 	name := c.GetString(":key")
 	serial := c.GetString(":serial")
 	tfaname := c.GetString(":tfaname")
+
+	// Capture the certificate owner's email before revocation so we can
+	// still notify them afterwards.
+	ownerEmail := c.lookupCertEmail(name)
+
 	if err := lib.RevokeCertificate(name, serial, tfaname); err != nil {
 		logs.Error(err)
 		//flash.Error(err.Error())
@@ -171,8 +177,34 @@ func (c *CertificatesController) Revoke() {
 	} else {
 		flash.Success("Success! Certificate for the name \"" + name + "\" and serial  \"" + serial + "\" has been revoked")
 		flash.Store(&c.Controller)
+
+		if err := lib.SendAlertEmail(lib.AlertCertificateRevoked, lib.AlertData{
+			RecipientEmail: ownerEmail,
+			ClientName:     name,
+			Serial:         serial,
+			ActorLogin:     c.Userinfo.Login,
+		}); err != nil {
+			logs.Warn("Certificates: failed to send revoke alert email for %s: %v", name, err)
+		}
 	}
 	c.showCerts()
+}
+
+// lookupCertEmail scans the PKI index for the given client name and returns
+// the email address recorded on the certificate request, if any.
+func (c *CertificatesController) lookupCertEmail(name string) string {
+	path := filepath.Join(state.GlobalCfg.OVConfigPath, "pki/index.txt")
+	certs, err := lib.ReadCerts(path)
+	if err != nil {
+		logs.Warn("Certificates: unable to read cert index for email lookup: %v", err)
+		return ""
+	}
+	for _, v := range certs {
+		if v.Details != nil && v.Details.Name == name {
+			return v.Details.Email
+		}
+	}
+	return ""
 }
 
 // @router /certificates/restart [get]
@@ -301,6 +333,45 @@ func (c *CertificatesController) saveClientConfig(keysPath string, name string) 
 	}
 
 	return destPath, nil
+}
+
+// sendCertificateEmail builds the .ovpn client profile (same code path used
+// by the Download handler) and, if a 2FA QR code was generated for this
+// client, attaches both to an alert email sent to the address supplied on
+// the certificate creation form. Any failure here is logged only -- it must
+// never fail or roll back the certificate that was already created.
+func (c *CertificatesController) sendCertificateEmail(cParams NewCertParams) {
+	if cParams.Email == "" {
+		return
+	}
+
+	keysPath := filepath.Join(state.GlobalCfg.OVConfigPath, "pki/issued")
+	ovpnPath, err := c.saveClientConfig(keysPath, cParams.Name)
+	if err != nil {
+		logs.Warn("Certificates: could not generate .ovpn profile for email to %s: %v", cParams.Email, err)
+		return
+	}
+
+	ovpnData, err := os.ReadFile(ovpnPath)
+	if err != nil {
+		logs.Warn("Certificates: could not read generated .ovpn profile %s: %v", ovpnPath, err)
+	}
+
+	qrData := lib.ReadQRCode(state.GlobalCfg.OVConfigPath, cParams.Name)
+
+	if err := lib.SendAlertEmail(lib.AlertCertificateCreated, lib.AlertData{
+		RecipientEmail: cParams.Email,
+		ClientName:     cParams.Name,
+		StaticIP:       cParams.Staticip,
+		ExpireDays:     cParams.ExpireDays,
+		ActorLogin:     c.Userinfo.Login,
+		OVPNProfile:    ovpnData,
+		OVPNFilename:   cParams.Name + ".ovpn",
+		QRCodePNG:      qrData,
+		QRFilename:     cParams.Name + "-2fa-qr.png",
+	}); err != nil {
+		logs.Warn("Certificates: failed to send creation alert email for %s: %v", cParams.Name, err)
+	}
 }
 
 func GetText(tpl string, c clientconfig.Config) (string, error) {
