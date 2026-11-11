@@ -11,6 +11,8 @@ Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com
 
 ### Changed
 - The footer is shorter (credits moved to the About page).
+- Removed the upstream author's "Buy me a coffee" donation buttons and the donation link in the upgrade table from the README
+  and docs; the credit to the original authors stays. Added `.gitattributes` so GitHub counts Go, not the bundled front-end libraries, as the main language.
 
 ## [1.0.1] - 2026-11-11
 

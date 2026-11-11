@@ -628,7 +628,7 @@ And you are done with the upgrade process.
   | 0.6     | o_v_config        | custom_opt_three              | Configuration > OpenVPN Server  |
   | **0.7** | **no schema changes** | **no schema changes**     | **no schema changes**           |
   | **0.8** | **no schema changes** | **no schema changes**     | **no schema changes**           |
-  | **0.9** | **no schema changes** | **no schema changes**     | Donate here https://u24.gov.ua  |
+  | **0.9** | **no schema changes** | **no schema changes**     | **no schema changes**           |
   | **0.9.2** | user            | is_admin                      | Your username > Profile         |
   | **0.9.3** | o_v_config      | func_mode                     | Configuration > OpenVPN Server  |
   | **0.9.3** | o_v_config      | script_security               | Configuration > OpenVPN Server  |
@@ -1042,5 +1042,3 @@ Then, if your user have enough privilegies you can Create new profile or manage 
 ## Дякую and Kudos to the initiator of this project
 
 Kudos to @adamwalach for development of the original [OpenVPN-WEB-UI](https://github.com/adamwalach/openvpn-web-ui) project which was used as solid foundation for OpenVPN UI.
-
-<a href="https://www.buymeacoffee.com/d3vilh" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="51" width="217"></a>
