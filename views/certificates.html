@@ -49,7 +49,7 @@
                     <td>
                       <i class="fa fa-fw fa-check-circle" style="color: #00a65a; font-size: 17px;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"></i>
                     </td>
-                  {{else if and (eq .Revocation "") .IsExpiring}}
+                  {{else if and (eq .Revocation "") .IsExpiring (not .IsExpired)}}
                     <td>
                       <i class="fa fa-fw fa-exclamation-circle" style="color: #f39c12; font-size: 17px;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"></i>
                     </td>
@@ -66,7 +66,7 @@
                     <td>
                       <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
                     </td>
-                  {{else if and (eq .Revocation "") .IsExpiring}}
+                  {{else if and (eq .Revocation "") .IsExpiring (not .IsExpired)}}
                     <td>
                       <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</b></a>
                     </td>
@@ -91,7 +91,7 @@
                       <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
                       <a class="btn btn-success btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
                     </td>
-                  {{else if and (eq .Revocation "") .IsExpiring}}
+                  {{else if and (eq .Revocation "") .IsExpiring (not .IsExpired)}}
                     <td>
                       <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.CN }}</b></a>
                       <a class="btn btn-warning btn-xs" style="font-size: 80%;" data-toggle="modal" data-target="#cert-{{ safeid .Details.CN }}-modal"><b style="font-size: 80%;">{{ .Details.Email }}</b></a>
@@ -144,9 +144,9 @@
                         <dd class="copy-details cert-name"><h4 style="color: #3c8dbc">{{ .Details.CN }}</h4></dd>
                         {{end}}
                         <dt class="copy-details">Status: </dt>
-                        <dd class="copy-details">{{if eq .EntryType "V"}}<span class="badge bg-success" style="font-size: 110%;" >Valid</span>{{else if eq .EntryType "R"}}<span class="badge bg-danger" style="font-size: 110%;">Revoked</span>{{else}}Unknown{{end}}</dd>
+                        <dd class="copy-details">{{if and (eq .EntryType "V") .IsExpired}}<span class="badge bg-danger" style="font-size: 110%;">Expired</span>{{else if eq .EntryType "V"}}<span class="badge bg-success" style="font-size: 110%;" >Valid</span>{{else if eq .EntryType "R"}}<span class="badge bg-danger" style="font-size: 110%;">Revoked</span>{{else}}Unknown{{end}}</dd>
                         <dt class="copy-details">Expiration Time: </dt>
-                        <dd class="copy-details exp-time">{{ if and .IsExpiring (eq .Revocation "") (ne .Details.Name "") }}<span class="badge bg-warning" style="font-size: 110%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}} <b> This Certificate will soon expire!</b></span>{{else}}<span class="badge bg-success">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</span>{{end}}</dd>
+                        <dd class="copy-details exp-time">{{ if and .IsExpired (eq .Revocation "") }}<span class="badge bg-danger" style="font-size: 110%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}} <b> This Certificate has expired!</b></span>{{else if and .IsExpiring (eq .Revocation "") (ne .Details.Name "") }}<span class="badge bg-warning" style="font-size: 110%;">{{ dateformat .ExpirationT "2006-01-02 15:04"}} <b> This Certificate will soon expire!</b></span>{{else}}<span class="badge bg-success">{{ dateformat .ExpirationT "2006-01-02 15:04"}}</span>{{end}}</dd>
                         <dt class="copy-details">Revoke Time: </dt>
                         <dd class="copy-details">{{if ne .Revocation ""}} <span class="badge bg-warning" style="font-size: 110%;">{{ dateformat .RevocationT "2006-01-02 15:04"}}</span> {{else}}<span id="helpBlock" class="text-muted">Not Revoked</span>{{end}}</dd>
                         <dt class="copy-details">IP Address: </dt>

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
-	"github.com/d3vilh/openvpn-ui/state"
+	"github.com/dubey-omprakash/openvpn-ui/state"
 )
 
 // Cert
@@ -18,7 +18,8 @@ type Cert struct {
 	EntryType   string
 	Expiration  string
 	ExpirationT time.Time
-	IsExpiring  bool
+	IsExpiring  bool // expires within 30 days (or already expired)
+	IsExpired   bool // expiry time has already passed
 	Revocation  string
 	RevocationT time.Time
 	Serial      string
@@ -55,13 +56,16 @@ func ReadCerts(path string) ([]*Cert, error) {
 		}
 		expT, _ := time.Parse("060102150405Z", fields[1])
 		expTA := time.Now().AddDate(0, 0, 30).After(expT) // If cer will expire in 30 days, raise this flag
-		//logs.Debug("ExpirationT: %v, IsExpiring: %v", expT, expTA) // logging
+		// index.txt keeps the flag 'V' after expiry (OpenSSL only rewrites it to 'E' on -updatedb),
+		// so the expiry time itself decides whether the certificate is expired.
+		isExpired := !expT.IsZero() && time.Now().After(expT)
 		revT, _ := time.Parse("060102150405Z", fields[2])
 		c := &Cert{
 			EntryType:   fields[0],
 			Expiration:  fields[1],
 			ExpirationT: expT,
 			IsExpiring:  expTA,
+			IsExpired:   isExpired,
 			Revocation:  fields[2],
 			RevocationT: revT,
 			Serial:      fields[3],

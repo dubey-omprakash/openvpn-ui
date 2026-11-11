@@ -4,11 +4,149 @@ OpenVPN server web administration interface.
 
 Quick to deploy and easy to use, makes work with small OpenVPN environments a breeze.
 
-<img src="https://raw.githubusercontent.com/d3vilh/openvpn-ui/main/docs/images/OpenVPN-UI-Home.png" alt="Openvpn-ui home screen"/>
+<img src="https://raw.githubusercontent.com/dubey-omprakash/openvpn-ui/main/docs/images/OpenVPN-UI-Home.png" alt="Openvpn-ui home screen"/>
 
-[![latest version](https://img.shields.io/github/v/release/d3vilh/openvpn-ui?color=%2344cc11&label=LATEST%20RELEASE&style=flat-square&logo=Github)](https://github.com/d3vilh/openvpn-ui/releases/latest) [![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/d3vilh/openvpn-ui/latest?logo=docker&label=DOCKER%20IMAGE&color=2344cc11&style=flat-square&logoColor=white)](https://hub.docker.com/r/d3vilh/openvpn-ui) ![Docker Image Size (tag)](https://img.shields.io/docker/image-size/d3vilh/openvpn-ui/latest?logo=Docker&color=2344cc11&label=IMAGE%20SIZE&style=flat-square&logoColor=white)
+[![latest version](https://img.shields.io/github/v/release/dubey-omprakash/openvpn-ui?color=%2344cc11&label=LATEST%20RELEASE&style=flat-square&logo=Github)](https://github.com/dubey-omprakash/openvpn-ui/releases/latest)
 
-[![latest version](https://img.shields.io/github/v/release/d3vilh/openvpn-server?color=%2344cc11&label=OpenVPN-SERVER&style=flat-square&logo=Github)](https://github.com/d3vilh/openvpn-server)  [![Docker Image Version (tag latest semver)](https://img.shields.io/docker/v/d3vilh/openvpn-server/latest?style=flat-square&logo=docker&logoColor=white&label=OpenVPN-SERVER%20IMAGE&color=2344cc11)](https://hub.docker.com/r/d3vilh/openvpn-server)
+[![latest version](https://img.shields.io/github/v/release/dubey-omprakash/openvpn-server?color=%2344cc11&label=OpenVPN-SERVER&style=flat-square&logo=Github)](https://github.com/dubey-omprakash/openvpn-server)
+
+> **This is a maintained fork of [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui)**
+> (`dubey-omprakash/openvpn-ui`). The upstream README below is kept in full; this section describes what the
+> fork adds and how to run it. The companion server image is in
+> [`dubey-omprakash/openvpn-server`](https://github.com/dubey-omprakash/openvpn-server).
+> See [CHANGELOG.md](CHANGELOG.md) for the full list of changes.
+
+## What this fork adds
+
+| Area | Change |
+|------|--------|
+| **SMTP email alerts** | Send email when a certificate is created or revoked, or a UI user is created. New-certificate emails carry the `.ovpn` profile and, with 2FA enabled, the 2FA QR code as attachments. |
+| **Custom email text** | Subject and body of every email can be edited in the UI with Go-template placeholders. |
+| **Bug fix [#96](https://github.com/d3vilh/openvpn-ui/issues/96)** | Certificate details popup did not open for names containing a period (`first.last`). |
+| **Bug fix [#97](https://github.com/d3vilh/openvpn-ui/issues/97)** | Renew / Revoke / Delete returned a 404 for names with a period and for older certificates with no name / 2FA / local-IP suffix. |
+| **Smaller fixes** | Revoke email finds the certificate by name or CN; HTML email bodies escape user-supplied values; new-user emails show the new user's login. |
+
+### Email (SMTP) alerts
+
+Open **Configuration → OpenVPN UI → Email (SMTP) Alerts**, fill in the form and press **Save Config**.
+
+| Field | Notes |
+|-------|-------|
+| Enable SMTP email alerts | Master switch. When off, nothing is sent. |
+| SMTP Host / Port | `587` uses STARTTLS, `465` uses implicit TLS (SMTPS), `25` is plain text. |
+| Username / Password | Authentication is used only when a username is set. Go refuses to send credentials over an unencrypted connection, so enable TLS when you use a login. |
+| From Email / From Name | Sender shown to the recipient. |
+| Use TLS / STARTTLS | Recommended. Required by most providers (Gmail, Microsoft 365, SES, ...). |
+| Skip TLS certificate verification | Only for relays with self-signed certificates. |
+| Notify on | New certificate, certificate revoked, new UI user account. Each can be switched off separately. |
+
+The recipient is the **email address entered for the certificate or user**. If it is empty, no email is sent.
+
+**Message text.** Under *Email message text (optional)* you can set a site name and a subject and body for each of the
+three events. Leave a field empty to keep the built-in message. If a template has a syntax error, the built-in message
+is used instead, so an alert is never lost.
+
+| Placeholder | Meaning |
+|-------------|---------|
+| `{{.SiteName}}` | Product / site name set above |
+| `{{.ClientName}}` | Certificate name |
+| `{{.Serial}}` | Certificate serial number |
+| `{{.StaticIP}}` | Static IP assigned to the client, if any |
+| `{{.ExpireDays}}` | Certificate validity in days |
+| `{{.ActorLogin}}` | UI user who performed the action |
+| `{{.RecipientName}}` / `{{.RecipientEmail}}` | Person who receives the email |
+| `{{.Login}}` | Login of a newly created UI user |
+
+Example body: `Hello {{.RecipientName}}, your {{.SiteName}} access "{{.ClientName}}" is attached. It is valid for {{.ExpireDays}} days.`
+
+**Testing without a real mail server.** Run [Mailpit](https://github.com/axllent/mailpit) next to the UI. Set host `mailpit`,
+port `1025`, TLS off, no username; every message appears at `http://<host>:8025`. Add to `docker-compose.override.yml`:
+
+```yaml
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "8025:8025/tcp"
+```
+
+**Security notes**
+- The SMTP password is stored **in plain text** in the UI's SQLite database (`./db`). Restrict access to that volume and use a dedicated sending account or app password.
+- A new-certificate email contains the client's private key (inside the `.ovpn`) and, with 2FA, the TOTP secret (the QR code) in the same message. Send it only over TLS to a trusted mailbox, or switch the notification off and hand the profile over another way.
+- Change the default admin password (`OPENVPN_ADMIN_PASSWORD`). Inside a compose file, a `$` in the password must be written as `$$`.
+
+## Running this fork
+
+The UI and the OpenVPN server are two containers that share volumes (`pki`, `config`, `server.conf`), the Docker socket and the
+management port. Build the UI image from this fork instead of pulling `d3vilh/openvpn-ui`, otherwise the features above are missing.
+
+```bash
+git clone https://github.com/dubey-omprakash/openvpn-ui.git
+cd openvpn-ui/build
+./build.sh                     # needs docker and docker-buildx; produces local/openvpn-ui:latest
+cd .. && git checkout build/Dockerfile*   # build.sh edits the Dockerfiles in place; restore them
+```
+
+Then, next to the server's `docker-compose.yml` (from
+[`dubey-omprakash/openvpn-server`](https://github.com/dubey-omprakash/openvpn-server)), create `docker-compose.override.yml`:
+
+```yaml
+services:
+  openvpn-ui:
+    image: local/openvpn-ui:latest
+    environment:
+      - OPENVPN_ADMIN_USERNAME=admin
+      - OPENVPN_ADMIN_PASSWORD=change-me-first
+```
+
+and start it: `docker compose up -d`. The UI is on port `8080`. After rebuilding the image later, apply it with
+`docker compose up -d --force-recreate openvpn-ui`. **Back up `./db` and `./pki` before upgrading.** New database
+columns for the settings are added automatically on start-up.
+
+### Certificate names
+
+Names such as `first.last` or `user@example.com` work. Certificates created before the UI recorded name, local IP and 2FA name
+in `pki/index.txt` appear under their CN and can be renewed, revoked and deleted like any other.
+
+### Cryptography note
+
+OpenVPN with OpenSSL uses classical algorithms (for example RSA/ECDSA certificates, AES-GCM data channel). This project does
+**not** by itself provide post-quantum protection. Anyone describing a deployment as "quantum safe" needs to back that up
+with the key-exchange and signature algorithms actually configured.
+
+### Versioning
+
+This fork uses [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
+
+- **MAJOR**: incompatible change (database or config format, removed feature).
+- **MINOR**: new feature that keeps existing setups working (for example a new settings card).
+- **PATCH**: bug fix only.
+
+Each release updates `lib/version.go` (shown in the page footer), adds an entry to [CHANGELOG.md](CHANGELOG.md), is tagged
+`vX.Y.Z` in git and is used as the Docker image tag. Current version: **1.0.0**, based on upstream `0.9.5.6`.
+
+### License, credits and disclaimer
+
+This is a **personal hobby project**. It is not a product of any company and has no commercial support. You are free to use, copy,
+modify and share it under the terms of the [MIT licence](LICENSE), which also means it comes **without any warranty**. Use it at
+your own risk, and review the security notes above before exposing it to the internet.
+
+Credits, as required by the licences involved:
+- [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui) by **Mr.Philipp (d3vilh)**, itself based on work by **Adam Wałach**. This fork
+  keeps the upstream history and copyright notices; the changes made here are listed in [CHANGELOG.md](CHANGELOG.md).
+- [d3vilh/openvpn-server-config](https://github.com/d3vilh/openvpn-server-config), used as a library.
+- All other libraries and bundled files are listed with their licences in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+- OpenVPN and EasyRSA (GPL-2.0) run in the server image; their sources are available from their own projects and from Alpine Linux.
+
+"OpenVPN" is a registered trademark of OpenVPN Inc. This project is not affiliated with, endorsed by or sponsored by OpenVPN Inc.
+The Go module path of this fork is `github.com/dubey-omprakash/openvpn-ui`.
+
+---
+
+# Upstream documentation
+
+The sections below are the upstream README. Image names and links that point at `d3vilh/...` refer to the upstream
+project's published images, not to this fork's build.
 
 ## Features
 
@@ -16,7 +154,7 @@ Quick to deploy and easy to use, makes work with small OpenVPN environments a br
 * Supports OpenVPN **tunnel**(`dev tun`) or **bridge**(`dev tap`) server configurations
 * Easy to **generate**, **download**, **renew**, **revoke**, **delete** and **view** client certificates
 * Client can have secret **passphrase** and **static IP** assigned during client certificate generation
-* Two factor authentication (**[2FA/MFA](https://github.com/d3vilh/openvpn-ui#two-factor-authentication-2fa)**) support
+* Two factor authentication (**[2FA/MFA](https://github.com/dubey-omprakash/openvpn-ui#two-factor-authentication-2fa)**) support
 * **Change predefined EasyRSA vars** including certificates and CRL expiration time
 * **Maintain EasyRSA PKI infrastructure** (init, build-ca, gen-dh, build-crl, gen-ta, revoke)
 * Change OpenVPN Server configuration via web interface
@@ -24,10 +162,11 @@ Quick to deploy and easy to use, makes work with small OpenVPN environments a br
 * Restart OpenVPN Server and OpenVPN UI from web interface
 * **OpenVPN-UI users management**. Administrators has full access, regular users to Certificates management, logs and status page only.
 * OpenVPN-UI Admin user and password can be passed via environment variables to container
+* **(Fork)** SMTP email alerts with `.ovpn` and 2FA QR attachments, and editable email text - see [What this fork adds](#what-this-fork-adds)
 * Updated infrustracture:
   * Alpine Linux as fastest and secure base image
-  * GoLang 1.21
-  * Beego 2.1 with all vulnerabilities fixed
+  * GoLang 1.26
+  * Beego 2.3
   * Easy-rsa 3.X
   * Openssl 3.X
   * OpenVPN 2.5.8 Server is fully compatible
@@ -41,12 +180,12 @@ Part of following projects:
 
 ## Installation
 For the best experience, it is recommended to deploy it within a Docker environment consisting of two distinct containers:
- - The [`d3vilh/openvpn-server`](https://github.com/d3vilh/openvpn-server) Back-End container (openvpn) for running OpenVPN server.
+ - The [`dubey-omprakash/openvpn-server`](https://github.com/dubey-omprakash/openvpn-server) Back-End container (openvpn) for running OpenVPN server.
  - OpenVPN UI Front-End container (openvpn-ui) for efficient management of the OpenVPN server environment.
 
 However it works fine as standalone application with standalone OpenVPN server as well.
 ### Intel x86 and AMD64 platforms
-You can run both containers from the official [openvpn-server](https://github.com/d3vilh/openvpn-server) repository, `docker-compose-openvpnui.yml`.
+You can run both containers from the official [openvpn-server](https://github.com/dubey-omprakash/openvpn-server) repository, `docker-compose-openvpnui.yml`.
 It includes all the files in its main directory. 
 
 For automated installation on baremetal x86-64 servers, Cloud or VM installation, please use [openvpn-aws](https://github.com/d3vilh/openvpn-aws) project.
@@ -56,7 +195,7 @@ It, as well, includes all the necessary scripts for easy installation of OpenVPN
 For Raspberry-Pi and other ARM devices, consider [Raspberry-Gateway](https://github.com/d3vilh/raspberry-gateway) project.
 It has all the necessary scripts for easy installation and lot of additional features.
 
-You can run both containers from the [openvpn-server](https://github.com/d3vilh/openvpn-server) repository as well (use `docker-compose-openvpnui.yml`).
+You can run both containers from the [openvpn-server](https://github.com/dubey-omprakash/openvpn-server) repository as well (use `docker-compose-openvpnui.yml`).
 It includes all the files in its main directory, as well. 
 
 ### Manual installation
@@ -85,7 +224,7 @@ It includes all the files in its main directory, as well.
 ```
 ---
 
-You can also couple OpenVPN-UI with recommended [d3vilh/openvpn-server](https://github.com/d3vilh/openvpn-server) image and here is updated `docker-compose.yml` for it:
+You can also couple OpenVPN-UI with recommended [dubey-omprakash/openvpn-server](https://github.com/dubey-omprakash/openvpn-server) image and here is updated `docker-compose.yml` for it:
 
 ```yaml
 ---
@@ -140,7 +279,7 @@ You have to run these commands before starting:
 mkdir -p /var/data/d3openvpn # change it as you needed
 cd /var/data/d3openvpn
 
-git clone https://github.com/d3vilh/openvpn-server . # or download the zip file from GitHub if you don't have git installed
+git clone https://github.com/dubey-omprakash/openvpn-server . # or download the zip file from GitHub if you don't have git installed
 
 sudo docker compose -f docker-compose.yml up -d
 ```
@@ -150,9 +289,9 @@ mkdir -p /var/data/d3openvpn # change it as you needed
 cd /var/data/d3openvpn
 
 mkdir -p ./config
-wget https://raw.githubusercontent.com/d3vilh/openvpn-server/refs/heads/main/server.conf -O server.conf
-wget https://raw.githubusercontent.com/d3vilh/openvpn-server/refs/heads/main/config/easy-rsa.vars -O config/easy-rsa.vars
-wget https://raw.githubusercontent.com/d3vilh/openvpn-server/refs/heads/main/config/client.conf -O config/client.conf
+wget https://raw.githubusercontent.com/dubey-omprakash/openvpn-server/refs/heads/main/server.conf -O server.conf
+wget https://raw.githubusercontent.com/dubey-omprakash/openvpn-server/refs/heads/main/config/easy-rsa.vars -O config/easy-rsa.vars
+wget https://raw.githubusercontent.com/dubey-omprakash/openvpn-server/refs/heads/main/config/client.conf -O config/client.conf
 echo "" > ./fw-rules.sh
 
 sudo docker compose -f docker-compose.yml up -d
@@ -205,7 +344,7 @@ docker run \
 
 Run the OpenVPN Server image:
 ```shell
-git clone https://github.com/d3vilh/openvpn-server ~/openvpn-server && \
+git clone https://github.com/dubey-omprakash/openvpn-server ~/openvpn-server && \
 cd ~/openvpn-server/ && \
 docker run  --interactive --tty --rm \
   --name=openvpn-server \
@@ -265,7 +404,7 @@ The new image will have `openvpn-ui` name.
 If you have your OpenVPN server up and running on the same host, you can install OpenVPN-UI as standalone application.
 For this you need to have GoLang installed on your host to build all the necessary binaries on the server itself.
 
-To make installation easier, version 0.9.5 now includes a [`standalone-install.sh`](https://github.com/d3vilh/openvpn-ui/blob/e2f452d2872a022147f8c58213fa4306f61e65e8/build/standalone-install.sh) script. This script helps you step by step, starting with downloading and installing GoLang, and ending with building the binaries.
+To make installation easier, version 0.9.5 now includes a [`standalone-install.sh`](https://github.com/dubey-omprakash/openvpn-ui/blob/e2f452d2872a022147f8c58213fa4306f61e65e8/build/standalone-install.sh) script. This script helps you step by step, starting with downloading and installing GoLang, and ending with building the binaries.
 
 At the moment script supports Debian based systems only.
 
@@ -435,17 +574,17 @@ Now you need to go to `Configuration > OpenVPN Server` in OpenVPN UI webpage and
 
 Here is example of Server configuration page with new fields after the upgrade from version 0.3 to 0.9:
 
-<img src="https://raw.githubusercontent.com/d3vilh/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.01.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
+<img src="https://raw.githubusercontent.com/dubey-omprakash/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.01.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
 
 You have to update empty fields with options from your current `server.conf` and **only then** press **`Save Config`** button.
 
 All fields to review are **marked** with <strong><span style="color:#337ab7" title="New format in this version">!</span></strong> sign:
 
-<img src="https://raw.githubusercontent.com/d3vilh/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.02.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
+<img src="https://raw.githubusercontent.com/dubey-omprakash/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.02.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
 
 Here is how it should looks like:
 
-<img src="https://raw.githubusercontent.com/d3vilh/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.03.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
+<img src="https://raw.githubusercontent.com/dubey-omprakash/openvpn-ui/main/docs/images/OpenVPN-UI-Upgrade.03.png" alt="Openvpn-ui upgrade" width="500" border="1"/>
 
 > **Important Note!**: In version 0.6 format of some fields has been changed! Please pay attention that before saving config you have to update all the fields with new format, otherwise OpenVPN Server will not start.
 
@@ -562,10 +701,10 @@ Thats it you are back to the previous version.
   </details>
 
 ## Configuration
-**OpenVPN UI** can be accessed on own port (*e.g. http://localhost:8080), the default user and password is `admin/gagaZush` preconfigured in `config.yml` if you are using Raspberry-Gateway or Openvpn-aws projects. For standalone installation, you can pass your own credentials via environment variables to container (refer to [Manual installation](https://github.com/d3vilh/openvpn-ui#manual-installation)).
+**OpenVPN UI** can be accessed on own port (*e.g. http://localhost:8080), the default user and password is `admin/gagaZush` preconfigured in `config.yml` if you are using Raspberry-Gateway or Openvpn-aws projects. For standalone installation, you can pass your own credentials via environment variables to container (refer to [Manual installation](https://github.com/dubey-omprakash/openvpn-ui#manual-installation)).
 
 ### Container volume
-The container volume can be initialized by using the [d3vilh/openvpn-server](https://github.com/d3vilh/openvpn-server) image with included scripts to automatically generate everything you need on the first run:
+The container volume can be initialized by using the [dubey-omprakash/openvpn-server](https://github.com/dubey-omprakash/openvpn-server) image with included scripts to automatically generate everything you need on the first run:
  - Diffie-Hellman parameters
  - an EasyRSA CA key and certificate
  - a new private key
@@ -606,16 +745,16 @@ This setup use `tun` mode by default, because it works on the widest range of de
 
 The default topology is `subnet`, because it works on the widest range of OS. `p2p`, for instance, does not work on Windows.
 
-The server config by default [specifies](https://github.com/d3vilh/openvpn-server/tree/main/config/server.conf#L35) `push redirect-gateway def1 bypass-dhcp`, meaning that after establishing the VPN connection, all traffic will go through the VPN. This might cause problems if you use local DNS recursors which are not directly reachable, since you will try to reach them through the VPN and they might not answer to you. If that happens, use public DNS resolvers like those of OpenDNS (`208.67.222.222` and `208.67.220.220`) or Google (`8.8.4.4` and `8.8.8.8`).
+The server config by default [specifies](https://github.com/dubey-omprakash/openvpn-server/tree/main/config/server.conf#L35) `push redirect-gateway def1 bypass-dhcp`, meaning that after establishing the VPN connection, all traffic will go through the VPN. This might cause problems if you use local DNS recursors which are not directly reachable, since you will try to reach them through the VPN and they might not answer to you. If that happens, use public DNS resolvers like those of OpenDNS (`208.67.222.222` and `208.67.220.220`) or Google (`8.8.4.4` and `8.8.8.8`).
 
-If you wish to use your local DNS server (Pi-Hile?), you have to modify a [dns-configuration](https://github.com/d3vilh/openvpn-server/tree/main/config/server.conf#L21) with your local DNS IP address. 
+If you wish to use your local DNS server (Pi-Hile?), you have to modify a [dns-configuration](https://github.com/dubey-omprakash/openvpn-server/tree/main/config/server.conf#L21) with your local DNS IP address. 
 
 This also can be done easy via `"Configuration" > "OpenVPN Server" > "Push DHCP"` options on OpenVPN UI webpage.
 
 ### OpenVPN client subnets. Guest and Home users
 
-By default [d3vilh/openvpn-server](https://github.com/d3vilh/openvpn-server) OpenVPN server uses option `server 10.0.70.0/24` as **"Trusted"** subnet to grab dynamic IPs for all your Clients which, by default will have full access to your **"Private/Home"** subnet, as well as Internet over VPN.
-However you can be desired to share internet over VPN with specific, Guest Clients and restrict access to your **"Private/Home"** subnet. For this scenario [d3vilh/openvpn-server](https://github.com/d3vilh/openvpn-server) `server.conf` configuration file has special `route 10.0.71.0/24` option, aka **"Guest users"** subnet.
+By default [dubey-omprakash/openvpn-server](https://github.com/dubey-omprakash/openvpn-server) OpenVPN server uses option `server 10.0.70.0/24` as **"Trusted"** subnet to grab dynamic IPs for all your Clients which, by default will have full access to your **"Private/Home"** subnet, as well as Internet over VPN.
+However you can be desired to share internet over VPN with specific, Guest Clients and restrict access to your **"Private/Home"** subnet. For this scenario [dubey-omprakash/openvpn-server](https://github.com/dubey-omprakash/openvpn-server) `server.conf` configuration file has special `route 10.0.71.0/24` option, aka **"Guest users"** subnet.
 
 <p align="center">
 <img src="https://github.com/d3vilh/raspberry-gateway/blob/master/images/OVPN_VLANs.png" alt="OpenVPN Subnets" width="700" border="1" />
@@ -628,7 +767,7 @@ To do that, just enter `"Static IP (optional)"` field in `"Certificates"` page a
 
 ### Firewall rules
 
-By default `docker_entrypoint.sh` of [d3vilh/openvpn-server](https://github.com/d3vilh/openvpn-server) OpenVPN Server container will apply following Firewall rules:
+By default `docker_entrypoint.sh` of [dubey-omprakash/openvpn-server](https://github.com/dubey-omprakash/openvpn-server) OpenVPN Server container will apply following Firewall rules:
 
 ```shell
 IPT MASQ Chains:
@@ -649,7 +788,7 @@ iptables -A FORWARD -s 10.0.70.88 -d 10.0.70.77 -j DROP
 iptables -A FORWARD -d 10.0.70.77 -s 10.0.70.88 -j DROP
 ```
 
-Check detailed subnets description on [here](https://github.com/d3vilh/openvpn-ui/tree/main#openvpn-client-subnets-guest-and-home-users).
+Check detailed subnets description on [here](https://github.com/dubey-omprakash/openvpn-ui/tree/main#openvpn-client-subnets-guest-and-home-users).
 
 ### OpenVPN Pstree structure
 
@@ -707,23 +846,23 @@ You can update external client IP and port address anytime under `"Configuration
 
 For this go to `"Configuration > OpenVPN Client"`:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ext_serv_ip1.png" alt="Configuration > Settings" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ext_serv_ip1.png" alt="Configuration > Settings" width="350" border="1" />
 
 And then update `"Connection Address"` and `"Connection Port"` fields with your external Internet IP and Port. 
 
 To generate new Client Certificate go to `"Certificates"`, then press `"Create Certificate"` button, enter new VPN client name, complete all the rest fields and press `"Create"` to generate new Client certificate:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ext_serv_ip2.png" alt="Server Address" width="350" border="1" />  <img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-New_Client.png" alt="Create Certificate" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ext_serv_ip2.png" alt="Server Address" width="350" border="1" />  <img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-New_Client.png" alt="Create Certificate" width="350" border="1" />
 
 To download .OVPN client configuration file, press on the `Client Name` you just created:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-New_Client_download.png" alt="download OVPN" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-New_Client_download.png" alt="download OVPN" width="350" border="1" />
 
 Install [Official OpenVPN client](https://openvpn.net/vpn-client/) to your client device.
 
 Deliver .OVPN profile to the client device and import it as a FILE, then connect with new profile to enjoy your free VPN:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Palm_import.png" alt="PalmTX Import" width="350" border="1" /> <img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Palm_connected.png" alt="PalmTX Connected" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Palm_import.png" alt="PalmTX Import" width="350" border="1" /> <img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Palm_connected.png" alt="PalmTX Connected" width="350" border="1" />
 
   </details>
 
@@ -732,7 +871,7 @@ Deliver .OVPN profile to the client device and import it as a FILE, then connect
       <summary>How to renew old client profile</summary>
 To renew certificate, go to `"Certificates"` and press `"Renew"` button for the client you would like to renew certificate for:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Cert-Renew.01.png" alt="Renew OpenVPN Certificate" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Cert-Renew.01.png" alt="Renew OpenVPN Certificate" width="600" border="1" />
 
 Right after this step new Certificate will be genrated and it will appear as new client profile with the same Client name. At this point both client profiles will have updated Certificate when you try to download it.
 
@@ -750,11 +889,11 @@ Renewal process will not affect active VPN connections, old client will be disco
 If you would like to prevent client to use yor VPN connection, you have to revoke client certificate and restart the OpenVPN daemon.
 You can do it via OpenVPN UI `"Certificates"` menue, by pressing `"Revoke"`` amber button:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Revoke.png" alt="Revoke Certificate" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Revoke.png" alt="Revoke Certificate" width="600" border="1" />
 
 Certificate revoke won't kill active VPN connections, you'll have to restart the service if you want the user to immediately disconnect. It can be done from the same `"Certificates"` page, by pressing Restart red button:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Restart.png" alt="OpenVPN Restart" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Restart.png" alt="OpenVPN Restart" width="600" border="1" />
 
 You can do the same from the `"Maintenance"` page.
 
@@ -782,7 +921,7 @@ When generating 2FA-enabled certificates OpenVPN-UI will provide QR code with 2F
 
 Procedure for 2FA generation is the same as for regular certificate, but you have to use the uniq `2FA Name` in the email-kind format:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-Cert-Create.png" alt="2FA Certificate create" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-Cert-Create.png" alt="2FA Certificate create" width="600" border="1" />
 
 > **Note**: For Multifactor Authentication (MFA), you can add one more password by completing **`Passphrase`** option. 
 
@@ -792,7 +931,7 @@ When you complete all the fields, click on **`Create`** and your new 2FA Certifi
 
 Once this done, you can click on the new certificate in the `Certificates` page to see all the details including QR code for 2FA token:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-Cert-details.png" alt="2FA Certificate details" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-Cert-details.png" alt="2FA Certificate details" width="600" border="1" />
 
 You can copy or email this information directly to happy 2FA certificate owner.
   </details>
@@ -805,25 +944,25 @@ To use 2FA certificate you have to install 2FA app on your device (**Google Auth
 
 After scanning QR-code, new Authenticator profile will be created in your 2FA app with the same name as your 2FA Certificate name:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-authenticator.png" alt="2FA Authenticator" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-authenticator.png" alt="2FA Authenticator" width="350" border="1" />
 
 Then you have to download and deliver `.OVPN profile` to [OpenVPN Connect app](https://openvpn.net/client/) and open it as a file. Following window appear:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-profile-add.png" alt="2FA OpenVPN Connect profile add" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-profile-add.png" alt="2FA OpenVPN Connect profile add" width="350" border="1" />
 
 Click `Add` to add new profile to OpenVPN Connect. Then you will be asked to enter your Username. As username use `2FA Name` which you used during Certificate/profile generation (as precisely as you can. `2FA Name` is part of authentication process):
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-username.png" alt="2FA OpenVPN Connect profile username" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-username.png" alt="2FA OpenVPN Connect profile username" width="350" border="1" />
 
 When you'll be prompted to Enter the password, you have to enter your 2FA token from your 2FA app:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-password.png" alt="2FA OpenVPN Connect profile 2FA password" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-password.png" alt="2FA OpenVPN Connect profile 2FA password" width="350" border="1" />
 
 Connection will be suceeded if you entered `2FA Name` and 2FA token correctly.
 
 For MFA authentication you can use optional `Passphrase` when generating new Client certificate, to protect your 2FA token with additional password. In this case you have to enter your `Passphrase` as a `Private Key Password` and 2FA token as `Password`: 
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-password-cert.png" alt="2FA OpenVPN Connect profile 2FA and Certificate passwords" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-2FA-mobi-password-cert.png" alt="2FA OpenVPN Connect profile 2FA and Certificate passwords" width="350" border="1" />
 
   </details>
 
@@ -852,53 +991,53 @@ You can create and delete users with different privileges - Administrators or re
 
 This functionality available via `"Users Profiles"` page:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileAdmin.png" alt="Username > Profile" width="350" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileAdmin.png" alt="Username > Profile" width="350" border="1" />
 
 
 Then, if your user have enough privilegies you can Create new profile or manage profiles of other users:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileCreate.png" alt="New OpenVPN UI Profile creation" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileCreate.png" alt="New OpenVPN UI Profile creation" width="600" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileManage.png" alt="OpenVPN UI Profiles management" width="600" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileManage.png" alt="OpenVPN UI Profiles management" width="600" border="1" />
 
 </details>
 
 ### Screenshots:
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Login.png" alt="OpenVPN-UI Login screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Login.png" alt="OpenVPN-UI Login screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Home.png" alt="OpenVPN-UI Home screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Home.png" alt="OpenVPN-UI Home screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs.png" alt="OpenVPN-UI Certificates screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs.png" alt="OpenVPN-UI Certificates screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Create-Cert.png" alt="OpenVPN-UI Create Certificate screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Create-Cert.png" alt="OpenVPN-UI Create Certificate screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs-Details-Expire.png" alt="OpenVPN-UI Expire Certificate details" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs-Details-Expire.png" alt="OpenVPN-UI Expire Certificate details" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs-Details_OK.png" alt="OpenVPN-UI OK Certificate details" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Certs-Details_OK.png" alt="OpenVPN-UI OK Certificate details" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-EasyRsaVars.png" alt="OpenVPN-UI EasyRSA vars screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-EasyRsaVars.png" alt="OpenVPN-UI EasyRSA vars screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-EasyRsaVars-View.png" alt="OpenVPN-UI EasyRSA vars config view screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-EasyRsaVars-View.png" alt="OpenVPN-UI EasyRSA vars config view screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Maintenance.png" alt="OpenVPN-UI Maintenance screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Maintenance.png" alt="OpenVPN-UI Maintenance screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Server-config.png" alt="OpenVPN-UI Server Configuration screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Server-config.png" alt="OpenVPN-UI Server Configuration screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Server-config-edit.png" alt="OpenVPN-UI Server Configuration edit screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Server-config-edit.png" alt="OpenVPN-UI Server Configuration edit screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ClientConf.png" alt="OpenVPN-UI Client Configuration screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ClientConf.png" alt="OpenVPN-UI Client Configuration screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Config.png" alt="OpenVPN-UI Configuration screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Config.png" alt="OpenVPN-UI Configuration screen" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Profile.png" alt="OpenVPN-UI User Profile" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Profile.png" alt="OpenVPN-UI User Profile" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileCreate.png" alt="New OpenVPN UI Profile creation" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileCreate.png" alt="New OpenVPN UI Profile creation" width="1000" border="1" />
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileManage.png" alt="OpenVPN UI Profiles management" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-ProfileManage.png" alt="OpenVPN UI Profiles management" width="1000" border="1" />
 
 
-<img src="https://github.com/d3vilh/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Logs.png" alt="OpenVPN-UI Logs screen" width="1000" border="1" />
+<img src="https://github.com/dubey-omprakash/openvpn-ui/blob/main/docs/images/OpenVPN-UI-Logs.png" alt="OpenVPN-UI Logs screen" width="1000" border="1" />
 
 ## Дякую and Kudos to the initiator of this project
 
