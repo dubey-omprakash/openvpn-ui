@@ -123,7 +123,7 @@ This fork uses [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
 - **PATCH**: bug fix only.
 
 Each release updates `lib/version.go` (shown in the page footer), adds an entry to [CHANGELOG.md](CHANGELOG.md), is tagged
-`vX.Y.Z` in git and is used as the Docker image tag. Current version: **1.0.0**, based on upstream `0.9.5.6`.
+`vX.Y.Z` in git and is used as the Docker image tag. Current version: **1.1.0**, based on upstream `0.9.5.6`.
 
 ### License, credits and disclaimer
 

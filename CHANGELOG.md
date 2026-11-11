@@ -2,6 +2,16 @@
 
 Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui).
 
+## [1.1.0] - 2026-11-11
+
+### Added
+- **About page** (top menu) with version, credits, licence text and links to the repositories and third-party notices.
+- After **Renew**, the old and the renewed certificate are labelled ("Old certificate - renewed, still active" /
+  "Renewed (new)") and the Revoke button explains what it does for each. The old certificate stays valid until it is revoked.
+
+### Changed
+- The footer is shorter (credits moved to the About page).
+
 ## [1.0.1] - 2026-11-11
 
 ### Fixed
