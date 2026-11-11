@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
-	"github.com/d3vilh/openvpn-ui/models"
+	"github.com/dubey-omprakash/openvpn-ui/models"
 )
 
 // EmailAttachment represents a single file to attach to an outbound message.
@@ -102,7 +102,7 @@ func SendEmail(msg EmailMessage) error {
 // sendViaSMTP dials the SMTP server and transmits the message. It supports
 // both implicit TLS (port 465 style) and STARTTLS (port 587/25 style),
 // falling back to plain submission only if SMTPUseTLS is explicitly false --
-// which is not recommended for production/tender deployments.
+// which is not recommended for production deployments.
 func sendViaSMTP(addr, host string, auth smtp.Auth, from string, to []string, msg []byte, useTLS bool, skipVerify bool) error {
 	tlsConfig := &tls.Config{
 		ServerName:         host,

@@ -2,7 +2,9 @@
 
 Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui).
 
-## [Unreleased]
+## [1.0.0] - 2026-11-06
+
+First release of the fork. Based on upstream `0.9.5.6`.
 
 ### Added
 - **SMTP email alerts** (Configuration > OpenVPN UI > Email (SMTP) Alerts):
@@ -30,6 +32,16 @@ Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com
 - Revoke email lookup matches the certificate by name or CN.
 - Default HTML email bodies escape user-supplied values.
 - New-user emails show the new user's login instead of the admin's.
+
+### Changed
+- Version is now defined in `lib/version.go` and shown in the page footer.
+- Repository links in the footer, login page, docs and README point to this fork; the upstream project is credited in the
+  footer and README.
+- Go module path renamed from `github.com/d3vilh/openvpn-ui` to `github.com/dubey-omprakash/openvpn-ui` (go.mod, imports,
+  generated router file, `build/build.sh`). The dependency `d3vilh/openvpn-server-config` is unchanged.
+- Added `THIRD-PARTY-NOTICES.md`, the fork's copyright line in `LICENSE`, and a hobby-project/no-warranty notice in the README.
+- Neutral placeholder texts in the SMTP settings form.
+- Removed the upstream `FUNDING.yml`; the sample `docs/docker-compose.yml` uses locally built images.
 
 ### Notes
 - The SMTP password is stored as plain text in the UI's SQLite database.

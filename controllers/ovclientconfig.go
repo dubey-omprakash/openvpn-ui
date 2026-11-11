@@ -10,9 +10,9 @@ import (
 	"github.com/beego/beego/v2/server/web"
 	clientconfig "github.com/d3vilh/openvpn-server-config/client/client-config"
 	mi "github.com/d3vilh/openvpn-server-config/server/mi"
-	"github.com/d3vilh/openvpn-ui/lib"
-	"github.com/d3vilh/openvpn-ui/models"
-	"github.com/d3vilh/openvpn-ui/state"
+	"github.com/dubey-omprakash/openvpn-ui/lib"
+	"github.com/dubey-omprakash/openvpn-ui/models"
+	"github.com/dubey-omprakash/openvpn-ui/state"
 )
 
 type OVClientConfigController struct {

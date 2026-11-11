@@ -13,6 +13,8 @@ import (
 
 // AddFuncMaps .
 func AddFuncMaps() {
+	// appversion returns the fork's version for the page footer.
+	_ = web.AddFuncMap("appversion", func() string { return AppVersion })
 	// safeid turns a certificate name into a string that is safe to use in an
 	// HTML id and in a CSS/jQuery selector. Names such as "first.last" or
 	// "user@example.com" contain characters that break "#id" selectors, which

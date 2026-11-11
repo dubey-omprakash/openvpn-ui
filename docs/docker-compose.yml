@@ -3,7 +3,7 @@ version: "3.5"
 services:
     openvpn:
        container_name: openvpn
-       image: d3vilh/openvpn-server:latest
+       image: local/openvpn-server:2.7   # build from github.com/dubey-omprakash/openvpn-server
        privileged: true
        ports: 
           - "1194:1194/udp"
@@ -24,7 +24,7 @@ services:
 
     openvpn-ui:
        container_name: openvpn-ui
-       image: d3vilh/openvpn-ui:latest
+       image: local/openvpn-ui:latest      # build from github.com/dubey-omprakash/openvpn-ui (build/build.sh)
        environment:
            - OPENVPN_ADMIN_USERNAME=admin
            - OPENVPN_ADMIN_PASSWORD=gagaZush

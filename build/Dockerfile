@@ -4,7 +4,7 @@
 # LINE 33 is WA for current version of easy-rsa, it will be removed in future!! 
 
 FROM DEFINE-YOUR-ARCH
-LABEL maintainer="Mr.Philipp <d3vilh@github.com>"
+LABEL maintainer="dubey-omprakash (fork of d3vilh/openvpn-ui; original author Mr.Philipp <d3vilh@github.com>)"
 LABEL version="0.9.5.6"
 WORKDIR /opt
 EXPOSE 8080/tcp
