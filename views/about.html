@@ -1,0 +1,61 @@
+{{ template "layout/base.html" . }}
+
+{{define "head"}}
+<title>OpenVPN UI - About</title>
+{{end}}
+
+{{define "body"}}
+<div class="card card-default">
+  <div class="card-header with-border">
+    <h3 class="card-title">About OpenVPN UI</h3>
+  </div>
+  <div class="card-body">
+    <p>
+      <b>Version {{ .AppVersion }}</b><br>
+      A web interface for administering an OpenVPN server: certificates, 2FA, server settings, logs and email alerts.
+      This is a personal hobby project, provided free of charge and <b>without any warranty</b>.
+    </p>
+    <p>
+      Source code and changelog:
+      <a href="https://github.com/dubey-omprakash/openvpn-ui" target="_blank">github.com/dubey-omprakash/openvpn-ui</a><br>
+      OpenVPN server image:
+      <a href="https://github.com/dubey-omprakash/openvpn-server" target="_blank">github.com/dubey-omprakash/openvpn-server</a>
+    </p>
+  </div>
+</div>
+
+<div class="card card-default">
+  <div class="card-header with-border">
+    <h3 class="card-title">Credits</h3>
+  </div>
+  <div class="card-body">
+    <ul>
+      <li>Based on <a href="https://github.com/d3vilh/openvpn-ui" target="_blank">d3vilh/openvpn-ui</a> by Mr.Philipp (d3vilh),
+        which in turn builds on work by Adam Wa&lstrok;ach.</li>
+      <li><a href="https://github.com/d3vilh/openvpn-server-config" target="_blank">d3vilh/openvpn-server-config</a>
+        is used as a library.</li>
+      <li>Built with <a href="https://beego.wiki" target="_blank">Beego</a>, <a href="https://adminlte.io" target="_blank">AdminLTE</a>,
+        <a href="https://getbootstrap.com" target="_blank">Bootstrap</a>, <a href="https://jquery.com" target="_blank">jQuery</a>,
+        <a href="https://ace.c9.io" target="_blank">Ace</a> and other open source components. Their licences are listed in
+        <a href="https://github.com/dubey-omprakash/openvpn-ui/blob/main/THIRD-PARTY-NOTICES.md" target="_blank">THIRD-PARTY-NOTICES.md</a>.</li>
+      <li>Runs together with <a href="https://openvpn.net" target="_blank">OpenVPN</a> and
+        <a href="https://github.com/OpenVPN/easy-rsa" target="_blank">EasyRSA</a>.</li>
+    </ul>
+    <p class="text-muted">&ldquo;OpenVPN&rdquo; is a registered trademark of OpenVPN Inc. This project is not affiliated with,
+      endorsed by or sponsored by OpenVPN Inc.</p>
+  </div>
+</div>
+
+<div class="card card-default collapsed-card">
+  <div class="card-header with-border">
+    <h3 class="card-title">Licence (MIT)</h3>
+    <div class="pull-right card-tools">
+      <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fa fa-plus"></i></button>
+    </div>
+  </div>
+  <div class="card-body">
+    {{if .LicenseText}}<pre>{{ .LicenseText }}</pre>
+    {{else}}<p>See <a href="https://github.com/dubey-omprakash/openvpn-ui/blob/main/LICENSE" target="_blank">LICENSE</a>.</p>{{end}}
+  </div>
+</div>
+{{end}}

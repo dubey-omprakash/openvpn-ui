@@ -2,6 +2,18 @@
 
 Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui).
 
+## [1.1.0] - 2026-11-11
+
+### Added
+- **About page** (top menu) with version, credits, licence text and links to the repositories and third-party notices.
+- After **Renew**, the old and the renewed certificate are labelled ("Old certificate - renewed, still active" /
+  "Renewed (new)") and the Revoke button explains what it does for each. The old certificate stays valid until it is revoked.
+
+### Changed
+- The footer is shorter (credits moved to the About page).
+- Removed the upstream author's "Buy me a coffee" donation buttons and the donation link in the upgrade table from the README
+  and docs; the credit to the original authors stays. Added `.gitattributes` so GitHub counts Go, not the bundled front-end libraries, as the main language.
+
 ## [1.0.1] - 2026-11-11
 
 ### Fixed

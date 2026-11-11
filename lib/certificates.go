@@ -20,6 +20,8 @@ type Cert struct {
 	ExpirationT time.Time
 	IsExpiring  bool // expires within 30 days (or already expired)
 	IsExpired   bool // expiry time has already passed
+	Superseded  bool // old certificate of a renewed pair; still valid until it is revoked
+	Renewed     bool // new certificate of a renewed pair
 	Revocation  string
 	RevocationT time.Time
 	Serial      string
@@ -73,6 +75,21 @@ func ReadCerts(path string) ([]*Cert, error) {
 			Details:     parseDetails(fields[5]),
 		}
 		certs = append(certs, c)
+	}
+
+	// After "Renew" the same CN has two live entries: the first is the old certificate, the second the new one.
+	// revoke.sh treats them this way too (first entry = old). Mark them so the UI can explain it.
+	byCN := map[string][]*Cert{}
+	for _, c := range certs {
+		if c.Revocation == "" && c.Details != nil && c.Details.CN != "" {
+			byCN[c.Details.CN] = append(byCN[c.Details.CN], c)
+		}
+	}
+	for _, pair := range byCN {
+		if len(pair) == 2 {
+			pair[0].Superseded = true
+			pair[1].Renewed = true
+		}
 	}
 
 	return certs, nil

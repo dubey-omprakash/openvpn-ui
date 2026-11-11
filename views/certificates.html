@@ -44,6 +44,8 @@
                     <a href="{{urlfor "CertificatesController.Download" ":key" (or .Details.Name .Details.CN)}}">
                       {{ or .Details.Name .Details.CN }}
                     </a>
+                    {{if .Superseded}}<br><span class="badge bg-warning" style="font-size: 75%;" title="This certificate was renewed. It stays valid until you revoke it here.">Old certificate - renewed, still active</span>{{end}}
+                    {{if .Renewed}}<br><span class="badge bg-info" style="font-size: 75%;" title="Renewed certificate. Send the new profile to the user.">Renewed (new)</span>{{end}}
                   </td>
                   {{if and (eq .Revocation "") (not .IsExpiring)}}
                     <td>
@@ -110,7 +112,7 @@
                   {{end}}
 
                   {{ if and (eq .Revocation "") (ne .Details.Name "") }}
-                      <a href="{{urlfor "CertificatesController.Revoke" ":key" (or .Details.Name .Details.CN) ":serial" .Serial ":tfaname" (or .Details.TFAName "none")}}" class="btn btn-warning btn-xs" title="Revoke" style="font-size: 80%;">Revoke</a>
+                      <a href="{{urlfor "CertificatesController.Revoke" ":key" (or .Details.Name .Details.CN) ":serial" .Serial ":tfaname" (or .Details.TFAName "none")}}" class="btn btn-warning btn-xs" title="{{if .Superseded}}Revoke the OLD certificate (after the user has switched to the renewed profile){{else if .Renewed}}Cancel the renewal and restore the old certificate{{else}}Revoke{{end}}" style="font-size: 80%;">Revoke</a>
                   {{else}}
                       <a class="btn btn-default btn-xs" disabled>Revoke</a>
                   {{end}}
