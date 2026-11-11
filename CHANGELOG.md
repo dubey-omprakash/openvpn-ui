@@ -2,6 +2,13 @@
 
 Changes in this fork relative to upstream [d3vilh/openvpn-ui](https://github.com/d3vilh/openvpn-ui).
 
+## [1.0.1] - 2026-11-11
+
+### Fixed
+- Expired certificates were shown as "Valid" (green) in the details popup, with only a "will soon expire" note. `index.txt` keeps
+  the `V` flag after expiry, so the UI now compares the expiry time with the current time: expired certificates show a red
+  "Expired" status, a red expiry date and a "This Certificate has expired!" message. Renew stays available for them.
+
 ## [1.0.0] - 2026-11-06
 
 First release of the fork. Based on upstream `0.9.5.6`.
